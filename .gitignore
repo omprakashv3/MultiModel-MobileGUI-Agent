@@ -3,9 +3,12 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+android_control_images/
+test_*.py
 # C extensions
 *.so
-
+*.tar
+*.gz
 # Distribution / packaging
 .Python
 build/
