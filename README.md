@@ -18,7 +18,7 @@ InfiGUI-R1 is a multimodal large language model-based GUI agent primarily traine
 
 ### 🔧 Memory Optimization Highlights
 
-- **131x Memory Reduction**: From ~9.2GB to ~70MB peak usage
+- **4.5x Memory Reduction**: From ~82GB to ~18GB peak usage
 - **Lazy Loading**: Images loaded on-demand instead of preloading all 8,444 images
 - **Batch Processing**: Configurable batch sizes for different hardware
 - **Aggressive Cleanup**: Immediate memory cleanup after each batch
@@ -27,8 +27,8 @@ InfiGUI-R1 is a multimodal large language model-based GUI agent primarily traine
 ## 🚨 Problem Solved
 
 The original evaluation script had a critical memory issue:
-- **Root Cause**: Preloading 8,444 high-resolution images simultaneously
-- **Impact**: System crashes due to 100% RAM usage (requiring ~9GB+ memory)
+- **Root Cause**: Preloading 8,444 high-resolution images (1080x2400 RGBA) simultaneously
+- **Impact**: System crashes due to 100% RAM usage (requiring ~82GB+ memory)
 - **Solution**: Implemented lazy loading with batch processing and aggressive memory cleanup
 
 ## 🚀 Quick Start
@@ -79,12 +79,15 @@ python android_control.py \
 
 ## 📊 Memory Usage Comparison
 
-| Configuration | Original | Optimized | Improvement |
-|---------------|----------|-----------|-------------|
-| Peak Memory   | ~9.2 GB  | ~70 MB    | **131x less** |
-| Memory Growth | Linear   | Constant  | **No growth** |
-| System Stability | Crashes | Stable   | **No crashes** |
-| Processing Speed | N/A | Configurable | **Adaptable** |
+| Configuration      | Original           | Optimized    | Improvement     |
+|--------------------|--------------------|--------------|-----------------|
+| Pure Image Memory  | ~82 GB             | ~70 MB*      | **1,170x less** |
+| Peak System Memory | 80+ GB (crash)     | ~17-19 GB    | **4.5x less**   |
+| Memory Growth      | Linear             | Constant     | **No growth**   |
+| System Stability   | Crashes            | Stable       | **No crashes**  |
+| Processing Speed   | N/A                | Configurable | **Adaptable**   |
+
+*Peak batch memory for 16 images. Total system memory includes model loading overhead.
 
 ## 🔧 Technical Implementation
 
@@ -93,11 +96,11 @@ python android_control.py \
 1. **Lazy Loading Architecture**
    ```python
    # OLD: Load all images at startup (memory explosion)
-   images = [load_image(path) for path in all_paths]  # ~9GB
+   images = [load_image(path) for path in all_paths]  # ~82GB pure images
    
    # NEW: Load images per batch (constant memory)
    for batch in batches:
-       batch_images = [load_image(path) for path in batch_paths]  # ~70MB
+       batch_images = [load_image(path) for path in batch_paths]  # ~158MB per batch (16 images)
        process_batch(batch_images)
        cleanup_memory(batch_images)  # Immediate cleanup
    ```
@@ -123,6 +126,25 @@ python android_control.py \
    - Report memory consumption every 10 batches
    - Display initial, peak, and final memory usage
 
+### Memory Calculation Details
+
+The Android Control dataset contains **8,444 jobs** with images of **1080x2400 RGBA** (4 channels):
+
+```python
+# Memory per image calculation
+width, height, channels = 1080, 2400, 4  # RGBA
+memory_per_image = width * height * channels = ~9.89 MB
+
+# Total memory requirements
+total_images = 8444
+pure_image_memory = 8444 × 9.89 MB = ~82 GB
+
+# With optimizations
+batch_size = 16
+batch_memory = 16 × 9.89 MB = ~158 MB
+peak_system_memory = ~17-19 GB (includes model + processing overhead)
+```
+
 ### Command Line Options
 
 | Option | Default | Description |
@@ -135,7 +157,7 @@ python android_control.py \
 ## 📂 Project Structure
 
 ```
-InfiGUI-R1/
+infi-gui/
 ├── LICENSE                                    # Apache 2.0 License
 ├── README.md                                  # This file
 ├── images/                                    # Project images
@@ -174,8 +196,9 @@ python test_memory_simple.py
 
 Expected output:
 ```
-✅ Original approach would use ~9154.66 MB for all jobs
-✅ New approach uses ~70.00 MB peak memory
+✅ Original approach would use ~82 GB for all images
+✅ New approach uses ~17-19 GB peak system memory (including model)
+✅ Pure batch memory: ~158 MB (16 images) to ~632 MB (64 images)
 ```
 
 ## 🛠️ Troubleshooting
@@ -244,11 +267,13 @@ We extend our gratitude to the following open-source projects:
 ### Memory Optimization Contributions
 
 The memory optimization improvements in this repository include:
-- Lazy loading implementation to prevent memory overflow
-- Configurable batch processing for different hardware configurations
-- Aggressive memory cleanup and garbage collection
-- Real-time memory monitoring and reporting
-- Comprehensive testing framework for memory usage validation
+- **Lazy loading implementation** to prevent 82GB memory overflow
+- **Configurable batch processing** for different hardware configurations (4-64 images per batch)
+- **Aggressive memory cleanup** and garbage collection after each batch
+- **Real-time memory monitoring** and reporting with detailed statistics
+- **Comprehensive testing framework** for memory usage validation
+- **4.5x total system memory reduction** (80GB+ → 17-19GB peak usage)
+- **1,170x pure image memory optimization** (82GB → 158MB per batch)
 
 ## 📄 License
 
