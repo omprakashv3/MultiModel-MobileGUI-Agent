@@ -262,19 +262,55 @@ class AndroidControl:
                 output = job['llm_output']
                 current_check_pam = job['check_pams']
                 pred = output
+                
+                # Handle thinking mode
                 if self.thinking and '</think>' in pred:
                     pred = pred.split('</think>')[-1]
+                
+                # Handle tool_call format
                 if '<tool_call>' in pred:
                     pred = pred.split('<tool_call>')[1]
                 else:
-                    pred = '{"name": "mobile_use", "arguments":'+pred.split('{"name": "mobile_use", "arguments":',1)[1]
+                    # More robust parsing for mobile_use format
+                    mobile_use_pattern = '{"name": "mobile_use", "arguments":'
+                    if mobile_use_pattern in pred:
+                        pred = mobile_use_pattern + pred.split(mobile_use_pattern, 1)[1]
+                    else:
+                        # If the expected pattern is not found, try to find any JSON-like structure
+                        import re
+                        json_match = re.search(r'\{.*?"arguments":\s*\{.*?\}.*?\}', pred, re.DOTALL)
+                        if json_match:
+                            pred = json_match.group(0)
+                        else:
+                            # Last resort: try to find just the arguments part
+                            args_match = re.search(r'\{.*?"action".*?\}', pred, re.DOTALL)
+                            if args_match:
+                                pred = f'{{"name": "mobile_use", "arguments": {args_match.group(0)}}}'
+                            else:
+                                raise ValueError(f"Could not parse prediction format: {pred[:200]}")
+                
+                # Handle tool_call closing
                 if '</tool_call>' in pred:
                     pred = pred.split('</tool_call>')[0]
                 else:
-                    pred = pred.split("<conclusion>")[0]
-                    pred = pred.rsplit('}}',1)[0]+'}}'
+                    if "<conclusion>" in pred:
+                        pred = pred.split("<conclusion>")[0]
+                    # Clean up malformed JSON
+                    pred = pred.rsplit('}}', 1)[0] + '}}'
 
-                pred_action = json.loads(pred.strip())['arguments']
+                # Parse the JSON
+                try:
+                    parsed = json.loads(pred.strip())
+                    if 'arguments' in parsed:
+                        pred_action = parsed['arguments']
+                    elif 'action' in parsed:
+                        # If it's just the action part without the wrapper
+                        pred_action = parsed
+                    else:
+                        raise ValueError(f"No 'arguments' or 'action' found in parsed JSON: {parsed}")
+                except json.JSONDecodeError as e:
+                    raise ValueError(f"JSON decode error: {e}. Pred: {pred[:200]}")
+                
                 job['llm_prediction'] = pred_action
 
                 type_match, extact_match = evaluate_android_control_action(pred_action, current_check_pam, job['width'], job['height'], job['resized_width'], job['resized_height'], pred_type ='abs_resized', gt_type='abs_resized')
@@ -291,22 +327,27 @@ class AndroidControl:
                     
                 if current_check_pam['action'] == 'click':
                     all_click_num += 1
-            except:
-                import traceback
-                traceback.print_exc()
-                print(output)
-                print(job)
+                    
+            except Exception as e:
+                # Enhanced error logging
+                print(f"\n❌ Error processing job {job.get('question_id', 'unknown')}: {str(e)}")
+                print(f"Output (first 500 chars): {output[:500] if 'output' in locals() else 'N/A'}")
+                if 'pred' in locals():
+                    print(f"Parsed pred: {pred[:200]}")
                 error_num += 1
+                job['parse_error'] = str(e)
                 continue
         print('Type_match_num and Extact_match_num: ', Type_match_num, Extact_match_num, '/ all =', len(jobs))
         print('click_match_num:', click_match_num, '/ all =', all_click_num)
         print('error num', error_num)
 
         res = {
-            'type_match_acc': Type_match_num/len(jobs)*100,
-            'extact_match_acc': Extact_match_num/len(jobs)*100,
-            'click_match_acc': click_match_num/all_click_num*100,
+            'type_match_acc': Type_match_num/len(jobs)*100 if len(jobs) > 0 else 0,
+            'extact_match_acc': Extact_match_num/len(jobs)*100 if len(jobs) > 0 else 0,
+            'click_match_acc': click_match_num/all_click_num*100 if all_click_num > 0 else 0,
             'error_num': error_num,
+            'total_jobs': len(jobs),
+            'click_jobs': all_click_num,
         }
         
         print(json.dumps(res, indent=' '))

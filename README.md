@@ -64,7 +64,7 @@ python android_control.py \
   --model_path Reallm-Labs/InfiGUI-R1-3B \
   --eval_type high \
   --batch_size 8 \
-  --debug  # Use only 1/10th of data for testing
+  --debug  # Use only 1/100th of data for testing
 ```
 
 ### High-Memory Systems
