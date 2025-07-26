@@ -1,0 +1,8 @@
+{
+  "type_match_acc": 83.0175272382757,
+  "extact_match_acc": 79.54760776882995,
+  "click_match_acc": 93.05949008498584,
+  "error_num": 1123,
+  "total_jobs": 8444,
+  "click_jobs": 4236
+}

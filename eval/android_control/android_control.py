@@ -373,7 +373,7 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', type=str, default='./', help='Path to the output directory')
     parser.add_argument('--thinking', action='store_true', help='Enable thinking mode')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
-    parser.add_argument('--batch_size', type=int, default=16, help='Batch size for processing (reduce if running out of memory)')
+    parser.add_argument('--batch_size', type=int, default=512, help='Batch size for processing (reduce if running out of memory)')
     
     args = parser.parse_args()
     
