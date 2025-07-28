@@ -8,6 +8,15 @@
 | **Grounding**  | 93.2         | **79.55**           | **-13.65** ↓    |
 | **Click Accuracy** | 92.1         | **93.06**           | **+0.96** ↑     |
 
+## Eval Type =: High
+
+| Metric         | Original (%) | Memory-Optimized (%) | Difference (Δ)  |
+|----------------|--------------|---------------------|-----------------|
+| **Type Match** | 82.7          | **59.27**           | **-12.98** ↓    |
+| **Grounding**  | 74.4          | **52.0**           | **-13.65** ↓    |
+| **Click Accuracy** | 71.1        | **73.94**           | **+0.96** ↑     |
+
+
 ## 🎯 Detailed Analysis
 
 ### Key Metrics
