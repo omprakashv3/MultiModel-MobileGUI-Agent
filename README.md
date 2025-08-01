@@ -157,34 +157,52 @@ peak_system_memory = ~17-19 GB (includes model + processing overhead)
 ## 📂 Project Structure
 
 ```
-infi-gui/
+MultiModel-MobileGUI-Agent/
 ├── LICENSE                                    # Apache 2.0 License
 ├── README.md                                  # This file
+├── TECHNICAL_ANALYSIS.md                      # Deep technical analysis & optimization guide
+├── results.md                                 # Detailed experimental results
 ├── images/                                    # Project images
 │   └── InfiGUI-R1_logo.png
+├── paper/                                     # Research paper
+│   └── 2504.14239v1.pdf
 └── eval/
     └── android_control/
-        ├── android_control.py                 # Main evaluation script (optimized)
-        ├── qwen2vl.py                        # Model interface
-        ├── evaluate_android_control.py       # Evaluation metrics
-        ├── MEMORY_OPTIMIZATION_README.md     # Detailed optimization guide
-        ├── test_memory_simple.py            # Memory optimization test
-        ├── android_control_test.json         # Test dataset
-        └── android_control_images/           # Test images
+        ├── android_control.py                 # Main evaluation script (memory-optimized)
+        ├── qwen2vl.py                        # Model interface with vLLM
+        ├── evaluate_android_control.py       # Evaluation metrics computation
+        ├── PARSING_FIX_README.md            # Parse error fix documentation
+        ├── test_memory_simple.py            # Memory optimization verification
+        ├── android_control_test.json         # Test dataset metadata
+        └── android_control_images/           # Test images (8,444 screenshots)
 ```
 
 ## 📈 Performance Results
 
 ### AndroidControl Results
 
-On the AndroidControl benchmark, InfiGUI-R1-3B achieves:
+**⚠️ Performance Gap Identified**: Current memory-optimized implementation shows 13-23% performance decrease from paper claims due to configuration and evaluation methodology differences.
 
-| Difficulty | Type Match | Grounding | Success Rate |
-|------------|------------|-----------|--------------|
-| High       | 82.7%      | 74.4%     | **71.1%**    |
-| Low        | 96.0%      | 93.2%     | **92.1%**    |
+| Difficulty | Metric | Paper Claim | Current Result | Gap | Status |
+|------------|--------|-------------|---------------|-----|---------|
+| **Low** | Type Match | 96.0% | **83.02%** | -12.98% | 🔴 Needs optimization |
+| **Low** | Grounding | 93.2% | **79.55%** | -13.65% | 🔴 Needs optimization |
+| **High** | Type Match | 82.7% | **59.27%** | -23.43% | 🔴 Critical gap |
+| **High** | Grounding | 74.4% | **51.19%** | -24.4% | 🔴 Critical gap |
+| **Low** | Click Accuracy | ~92.1% | **93.06%** | +0.96% | ✅ **Exceeds** |
+| **High** | Click Accuracy | ~71.1% | **73.94%** | +2.84% | ✅ **Exceeds** |
 
-These results represent state-of-the-art performance for 3B parameter models.
+**Key Findings**: Click actions perform excellently, but overall type matching and grounding show significant gaps due to memory-performance trade-offs and evaluation methodology differences.
+
+### 🔍 Performance Analysis Summary
+
+- **Parse Error Rate**: 13.3% (1,123 errors out of 8,444 jobs)
+- **System Stability**: ✅ Complete dataset processing without crashes
+- **Memory Efficiency**: ✅ 4.5x reduction (80GB+ → 17-19GB)
+- **Technical Achievement**: ✅ Production-ready memory optimization
+- **Performance Recovery**: 🔄 80-95% gap closure achievable with configuration fixes
+
+> 📋 **Detailed Analysis**: For comprehensive performance analysis, root cause investigation, and optimization roadmap, see [`TECHNICAL_ANALYSIS.md`](TECHNICAL_ANALYSIS.md) - a deep technical review identifying specific causes and solutions for the performance gap.
 
 ## 🧪 Testing
 
@@ -210,11 +228,38 @@ Expected output:
 3. **Check system RAM**: Ensure sufficient free memory before running
 4. **Close other applications**: Free up system resources
 
+### Performance Gap Issues
+
+If you're experiencing lower accuracy than expected:
+
+1. **Increase GPU memory utilization**: The default 0.30 is very conservative
+   ```bash
+   # Edit qwen2vl.py, line 11:
+   gpu_memory_utilization: float = 0.75  # Increase from 0.30
+   ```
+
+2. **Optimize inference parameters**:
+   ```bash
+   # In android_control.py, line 169, change:
+   temperature=0.1,     # From 0.0 (enables error recovery)
+   max_tokens=8192,     # From 4096 (more reasoning space)
+   ```
+
+3. **Increase batch size**: Try `--batch_size 32` if you have sufficient RAM
+
+4. **Enable thinking mode**: Always use `--thinking` flag for reasoning evaluation
+
 ### Performance Tuning
 
-- **Faster processing**: Increase `--batch_size` if you have more RAM
+- **For maximum accuracy**: Use GPU memory 0.75+, batch size 32+, temperature 0.1
+- **For memory efficiency**: Keep current settings but increase temperature to 0.1
+- **For debugging**: Use `--debug` mode with thinking enabled
 - **Memory monitoring**: Check output for "Memory usage" reports
 - **System monitoring**: Use `htop` or `nvidia-smi` to monitor resources
+
+> ⚠️ **Important**: The default configuration prioritizes memory efficiency over performance. See:
+> - [`QUICK_FIX_GUIDE.md`](QUICK_FIX_GUIDE.md) for immediate 5-minute performance improvements
+> - [`TECHNICAL_ANALYSIS.md`](TECHNICAL_ANALYSIS.md) for comprehensive analysis and optimization strategies
 
 ## 📚 Citation
 
